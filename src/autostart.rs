@@ -11,9 +11,21 @@ pub fn is_enabled() -> bool {
 }
 
 pub fn set(enabled: bool) {
+    if enabled {
+        if let Ok(exe) = std::env::current_exe() {
+            set_path(&exe);
+        }
+    } else {
+        unsafe {
+            let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, RUN_KEY, VALUE);
+        }
+    }
+}
+
+/// Liga o início com o Windows apontando para `exe`.
+pub fn set_path(exe: &std::path::Path) {
     unsafe {
-        if enabled {
-            let Ok(exe) = std::env::current_exe() else { return };
+        {
             let cmd = format!("\"{}\"\0", exe.display());
             let wide: Vec<u16> = cmd.encode_utf16().collect();
             let bytes = std::slice::from_raw_parts(wide.as_ptr() as *const u8, wide.len() * 2);
@@ -25,8 +37,6 @@ pub fn set(enabled: bool) {
                 Some(bytes.as_ptr() as *const _),
                 bytes.len() as u32,
             );
-        } else {
-            let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, RUN_KEY, VALUE);
         }
     }
 }

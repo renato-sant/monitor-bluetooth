@@ -9,6 +9,12 @@ Mostra na bandeja do Windows a bateria dos dispositivos Bluetooth, com um ícone
 - A leitura é feita a cada 5 minutos e também ~4 s depois que um dispositivo conecta ou desconecta.
 - Um aviso de bateria baixa aparece uma vez por descarga quando o nível fica abaixo do limiar.
 
+## Instalação
+
+Basta abrir o `monitorbt.exe`. Na primeira execução ele oferece se instalar em `%LOCALAPPDATA%\Programs\MonitorBT\`. É uma instalação por usuário e não pede administrador. Depois ele liga o início com o Windows e abre a cópia instalada. O arquivo baixado pode ser apagado.
+
+Para atualizar, abra o `.exe` novo e responda "Sim": a versão instalada é fechada e substituída. Se você responder "Não" na primeira vez, o app roda de onde está e não pergunta de novo (`ask_install=0` no config).
+
 ## Build
 
 Toolchain: Rust `stable-x86_64-pc-windows-gnu`. Não precisa de Visual Studio.

@@ -4,6 +4,7 @@ mod autostart;
 mod battery;
 mod config;
 mod icon;
+mod install;
 mod tray;
 
 use std::cell::RefCell;
@@ -332,6 +333,14 @@ fn main() {
     unsafe {
         let _ = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
+        let cfg = {
+            let mut cfg = Config::load();
+            if install::maybe_install(&mut cfg) {
+                return; // a cópia instalada assumiu
+            }
+            cfg
+        };
+
         // Instância única.
         let _mutex = CreateMutexW(None, true, w!("Local\\MonitorBT.single"));
         if GetLastError() == ERROR_ALREADY_EXISTS {
@@ -368,7 +377,6 @@ fn main() {
             return;
         };
 
-        let cfg = Config::load();
         let interval_ms = cfg.interval_min.saturating_mul(60_000);
         APP.with(|a| {
             *a.borrow_mut() = Some(App {

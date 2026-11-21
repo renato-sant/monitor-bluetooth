@@ -1,18 +1,21 @@
 //! Embute assets/monitorbt.ico no .exe.
 //!
 //! O toolchain GNU do rustup não traz `windres`, então este script monta à mão
-//! um objeto COFF com a seção `.rsrc` (RT_ICON + RT_GROUP_ICON), igual ao que o
+//! um objeto COFF com a seção `.rsrc` (ícone + manifesto), igual ao que o
 //! windres geraria, e o passa ao linker.
 
 use std::path::PathBuf;
 
 const RT_ICON: u32 = 3;
 const RT_GROUP_ICON: u32 = 14;
+const RT_MANIFEST: u32 = 24;
 const LANG: u32 = 0x0409;
 
 fn main() {
     let ico_path = "assets/monitorbt.ico";
+    let manifest_path = "assets/monitorbt.manifest";
     println!("cargo:rerun-if-changed={ico_path}");
+    println!("cargo:rerun-if-changed={manifest_path}");
     println!("cargo:rerun-if-changed=build.rs");
 
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
@@ -20,7 +23,8 @@ fn main() {
     }
     let ico = std::fs::read(ico_path).expect("assets/monitorbt.ico");
     let (images, group) = parse_ico(&ico);
-    let obj = build_coff(&images, &group);
+    let manifest = std::fs::read(manifest_path).expect("assets/monitorbt.manifest");
+    let obj = build_coff(&images, &group, &manifest);
 
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("monitorbt-res.o");
     std::fs::write(&out, obj).unwrap();
@@ -68,7 +72,7 @@ fn put_u32(buf: &mut [u8], at: usize, v: u32) {
 }
 
 /// Monta a seção .rsrc e embrulha num objeto COFF x86-64.
-fn build_coff(images: &[Vec<u8>], group: &[u8]) -> Vec<u8> {
+fn build_coff(images: &[Vec<u8>], group: &[u8], manifest: &[u8]) -> Vec<u8> {
     // (tipo, id, dados), em ordem crescente de tipo e id.
     let mut res: Vec<(u32, u32, &[u8])> = images
         .iter()
@@ -76,7 +80,8 @@ fn build_coff(images: &[Vec<u8>], group: &[u8]) -> Vec<u8> {
         .map(|(i, d)| (RT_ICON, i as u32 + 1, d.as_slice()))
         .collect();
     res.push((RT_GROUP_ICON, 1, group));
-    let types = [RT_ICON, RT_GROUP_ICON];
+    res.push((RT_MANIFEST, 1, manifest));
+    let types = [RT_ICON, RT_GROUP_ICON, RT_MANIFEST];
 
     let mut s: Vec<u8> = Vec::new();
     // Nível 1: tipos.

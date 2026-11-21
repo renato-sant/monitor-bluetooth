@@ -13,11 +13,13 @@ pub struct Config {
     pub threshold: u8,
     pub interval_min: u32,
     pub hidden: HashSet<String>,
+    /// false depois que o usuário recusou a instalação.
+    pub ask_install: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { threshold: 20, interval_min: 5, hidden: HashSet::new() }
+        Self { threshold: 20, interval_min: 5, hidden: HashSet::new(), ask_install: true }
     }
 }
 
@@ -37,6 +39,7 @@ impl Config {
             match k.trim() {
                 "threshold" => cfg.threshold = v.parse().unwrap_or(cfg.threshold).min(100),
                 "interval_min" => cfg.interval_min = v.parse().unwrap_or(cfg.interval_min).max(1),
+                "ask_install" => cfg.ask_install = v != "0",
                 "hidden" if !v.is_empty() => {
                     cfg.hidden.insert(v.to_ascii_uppercase());
                 }
@@ -51,7 +54,10 @@ impl Config {
         if let Some(dir) = p.parent() {
             let _ = std::fs::create_dir_all(dir);
         }
-        let mut s = format!("threshold={}\ninterval_min={}\n", self.threshold, self.interval_min);
+        let mut s = format!(
+            "threshold={}\ninterval_min={}\nask_install={}\n",
+            self.threshold, self.interval_min, self.ask_install as u8
+        );
         let mut hidden: Vec<_> = self.hidden.iter().collect();
         hidden.sort();
         for h in hidden {
